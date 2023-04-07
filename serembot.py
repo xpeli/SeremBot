@@ -64,7 +64,7 @@ async def check_pooping_users():
         duration = current_time - start_time
         if duration.total_seconds() >= 3600:  # 1 hour in seconds
             summary[user_id] += 20
-            pooping_prices[user_id] += (20 / 60) * 300
+            pooping_prices[user_id] += (20 / 60) * 250
             del pooping_users[user_id]
 
 @bot.command()
@@ -89,6 +89,7 @@ async def poop_summary(ctx):
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
+    await bot.change_presence(activity=discord.Game(name="github.com/xpeli/SeremBot"))
     check_pooping_users.start()
 
 bot.run("YOUR_TOKEN")
