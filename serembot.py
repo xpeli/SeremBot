@@ -10,6 +10,12 @@ import datetime
     * Description: Discord bot for tracking pooping time
 """
 #----------------------------------------------------------#
+intents = discord.Intents.default()
+intents.typing = False
+intents.presences = False
+intents.messages = True
+intents.message_content = True
+
 bot = commands.Bot(command_prefix="!")
 
 pooping_users = {}
