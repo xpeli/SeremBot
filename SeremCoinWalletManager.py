@@ -27,6 +27,7 @@ class SeremCoinWalletManager:
         """
         if user_id not in self.wallets:
             self.wallets[user_id] = {"nickname": nickname, "balance": 0}
+            self._load_wallets(SAVEFILE_NAME)  # Load wallets from the previous session
             return True
         return False
 
