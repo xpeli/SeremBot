@@ -2,14 +2,16 @@ import discord
 from discord.ext import commands, tasks
 import datetime
 
-#----------------------------------------------------------#
+from SeremCoinWalletManager import SeremCoinWalletManager
+
+# ----------------------------------------------------------#
 """
     * SeremBot
     * Author: xpeli
     * Version: 1.0
     * Description: Discord bot for tracking pooping time
 """
-#----------------------------------------------------------#
+# ----------------------------------------------------------#
 intents = discord.Intents.default()
 intents.typing = False
 intents.presences = False
@@ -21,6 +23,8 @@ bot = commands.Bot(command_prefix="!")
 pooping_users = {}
 summary = {}
 pooping_prices = {}
+wallet_manager = SeremCoinWalletManager()  # Create an instance of SeremCoinWallet
+
 
 # Start pooping command
 @bot.command()
@@ -28,9 +32,11 @@ async def start_pooping(ctx):
     user_id = ctx.author.id
     if user_id not in pooping_users:
         pooping_users[user_id] = datetime.datetime.now()
+        wallet_manager.create_wallet(user_id, ctx.author.name)  # Create a wallet for the user if it doesn't exist
         await ctx.send(f"{ctx.author.mention} started pooping.")
     else:
         await ctx.send(f"{ctx.author.mention} you're already pooping!")
+
 
 # Stop pooping command
 @bot.command()
@@ -50,11 +56,15 @@ async def stop_pooping(ctx):
             pooping_prices[user_id] = 0
 
         pooping_prices[user_id] += (duration.total_seconds() / 3600) * 300
+        seremcoins_to_add = (duration.total_seconds() / 3600) * 10  # Calculate SeremCoins to add based on duration
+        wallet_manager.add_seremcoins(user_id, seremcoins_to_add)  # Add SeremCoins to the user's wallet
         del pooping_users[user_id]
 
-        await ctx.send(f"{ctx.author.mention} stopped pooping. Total duration: {duration_in_minutes:.2f} minutes.")
+        await ctx.send(
+            f"{ctx.author.mention} stopped pooping. Total duration: {duration_in_minutes:.2f} minutes. Earned SeremCoins: {seremcoins_to_add:.2f}.")
     else:
         await ctx.send(f"{ctx.author.mention} you're not currently pooping!")
+
 
 # Check for users who forgot to stop pooping
 @tasks.loop(minutes=1)
@@ -66,6 +76,7 @@ async def check_pooping_users():
             summary[user_id] += 20
             pooping_prices[user_id] += (20 / 60) * 250
             del pooping_users[user_id]
+
 
 @bot.command()
 async def poop_summary(ctx):
@@ -84,6 +95,15 @@ async def poop_summary(ctx):
     summary_message += f"\nTotal cost for all users: {total_cost:.2f} CZK"
 
     await ctx.send(summary_message)
+
+@bot.command()
+async def seremcoin_balance(ctx):
+    user_id = ctx.author.id
+    balance = wallet_manager.get_balance(user_id)
+    if balance is not None:
+        await ctx.send(f"{ctx.author.mention}, your SeremCoin balance is: {balance:.2f} SeremCoins.")
+    else:
+        await ctx.send(f"{ctx.author.mention}, you don't have a SeremCoin wallet yet. Start pooping to create one!")
 
 # Start the check_pooping_users task
 @bot.event
