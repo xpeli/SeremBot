@@ -18,7 +18,7 @@ intents.presences = False
 intents.messages = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 pooping_users = {}
 summary = {}
@@ -87,9 +87,10 @@ async def poop_summary(ctx):
     for user_id, duration in summary.items():
         user = await bot.fetch_user(user_id)
         price = pooping_prices[user_id]
+        seremcoins = wallet_manager.get_balance(user_id)
         total_duration += duration
         total_cost += price
-        summary_message += f"{user.name}: {duration:.2f} minutes, {price:.2f} CZK\n"
+        summary_message += f"{user.name}: {duration:.2f} minutes, {price:.2f} CZK, {seremcoins:.2f} SeremCoins\n"
 
     summary_message += f"\nTotal duration for all users: {total_duration:.2f} minutes"
     summary_message += f"\nTotal cost for all users: {total_cost:.2f} CZK"
