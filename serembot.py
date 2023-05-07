@@ -1,7 +1,10 @@
+import os
+
 import discord
 from discord.ext import commands, tasks
 import datetime
 
+from ChatGPTCommunicator import ChatGPTCommunicator
 from SeremCoinWalletManager import SeremCoinWalletManager
 
 # ----------------------------------------------------------#
@@ -24,6 +27,8 @@ pooping_users = {}
 summary = {}
 pooping_prices = {}
 wallet_manager = SeremCoinWalletManager()  # Create an instance of SeremCoinWallet
+
+chat_gpt = ChatGPTCommunicator()
 
 
 # Start pooping command
@@ -98,6 +103,24 @@ async def poop_summary(ctx):
     await ctx.send(summary_message)
 
 @bot.command()
+async def ask(ctx, *, prompt: str):
+    # prompt += ". Answer as a sarcastic 14 year old girl"
+    prompt += ". Answer as a gang member from the hood"
+    response = chat_gpt.send_single_prompt(prompt)
+    await ctx.send(f"{ctx.author.mention}: {response}")
+
+
+@bot.command()
+async def generate_image(ctx, *, prompt: str):
+    prompt += ". Make it depressed"
+    image_savefile = f"{ctx.author.id}_image.png"
+    chat_gpt.generate_image(prompt, image_savefile, "1024x1024")
+
+    with open(image_savefile, "rb") as img_file:
+        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt[:-19]}':", file=discord.File(img_file))
+
+
+@bot.command()
 async def seremcoin_balance(ctx):
     user_id = ctx.author.id
     balance = wallet_manager.get_balance(user_id)
@@ -113,4 +136,4 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="github.com/xpeli/SeremBot"))
     check_pooping_users.start()
 
-bot.run("YOUR_TOKEN")
+bot.run(os.environ.get("DISCORD_TOKEN"))
