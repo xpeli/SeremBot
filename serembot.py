@@ -1,5 +1,5 @@
 import os
-
+import random
 import discord
 from discord.ext import commands, tasks
 import datetime
@@ -105,7 +105,7 @@ async def poop_summary(ctx):
 
 @bot.command()
 async def ask(ctx, *, prompt: str):
-    prompt += personalities.get(PersonalityName.CRINGEY_DISCORD_MOD).value
+    prompt += personalities.get(random.choice(list(PersonalityName))).value
     response = chat_gpt.send_single_prompt(prompt)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
