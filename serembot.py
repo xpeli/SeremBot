@@ -6,6 +6,7 @@ import datetime
 
 from ChatGPTCommunicator import ChatGPTCommunicator
 from SeremCoinWalletManager import SeremCoinWalletManager
+from BotPersonalities import PersonalityName, personalities
 
 # ----------------------------------------------------------#
 """
@@ -104,8 +105,7 @@ async def poop_summary(ctx):
 
 @bot.command()
 async def ask(ctx, *, prompt: str):
-    # prompt += ". Answer as a sarcastic 14 year old girl"
-    prompt += ". Answer as a gang member from the hood"
+    prompt += personalities.get(PersonalityName.MOLOTOV_MICKEY).value
     response = chat_gpt.send_single_prompt(prompt)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
