@@ -105,7 +105,7 @@ async def poop_summary(ctx):
 
 @bot.command()
 async def ask(ctx, *, prompt: str):
-    prompt += personalities.get(PersonalityName.MOLOTOV_MICKEY).value
+    prompt += personalities.get(PersonalityName.CRINGEY_DISCORD_MOD).value
     response = chat_gpt.send_single_prompt(prompt)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
