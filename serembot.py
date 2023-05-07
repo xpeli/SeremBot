@@ -1,8 +1,12 @@
+import os
+import random
 import discord
 from discord.ext import commands, tasks
 import datetime
 
+from ChatGPTCommunicator import ChatGPTCommunicator
 from SeremCoinWalletManager import SeremCoinWalletManager
+from BotPersonalities import PersonalityName, personalities
 
 # ----------------------------------------------------------#
 """
@@ -18,12 +22,14 @@ intents.presences = False
 intents.messages = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 pooping_users = {}
 summary = {}
 pooping_prices = {}
 wallet_manager = SeremCoinWalletManager()  # Create an instance of SeremCoinWallet
+
+chat_gpt = ChatGPTCommunicator()
 
 
 # Start pooping command
@@ -87,14 +93,32 @@ async def poop_summary(ctx):
     for user_id, duration in summary.items():
         user = await bot.fetch_user(user_id)
         price = pooping_prices[user_id]
+        seremcoins = wallet_manager.get_balance(user_id)
         total_duration += duration
         total_cost += price
-        summary_message += f"{user.name}: {duration:.2f} minutes, {price:.2f} CZK\n"
+        summary_message += f"{user.name}: {duration:.2f} minutes, {price:.2f} CZK, {seremcoins:.2f} SeremCoins\n"
 
     summary_message += f"\nTotal duration for all users: {total_duration:.2f} minutes"
     summary_message += f"\nTotal cost for all users: {total_cost:.2f} CZK"
 
     await ctx.send(summary_message)
+
+@bot.command()
+async def ask(ctx, *, prompt: str):
+    prompt += personalities.get(random.choice(list(PersonalityName))).value
+    response = chat_gpt.send_single_prompt(prompt)
+    await ctx.send(f"{ctx.author.mention}: {response}")
+
+
+@bot.command()
+async def generate_image(ctx, *, prompt: str):
+    prompt += ". Make it depressed"
+    image_savefile = f"{ctx.author.id}_image.png"
+    chat_gpt.generate_image(prompt, image_savefile, "1024x1024")
+
+    with open(image_savefile, "rb") as img_file:
+        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt[:-19]}':", file=discord.File(img_file))
+
 
 @bot.command()
 async def seremcoin_balance(ctx):
@@ -112,4 +136,4 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="github.com/xpeli/SeremBot"))
     check_pooping_users.start()
 
-bot.run("YOUR_TOKEN")
+bot.run(os.environ.get("DISCORD_TOKEN"))
