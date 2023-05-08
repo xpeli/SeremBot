@@ -4,9 +4,9 @@ import discord
 from discord.ext import commands, tasks
 import datetime
 
+from BotPersonalities import PersonalityName, personalities
 from ChatGPTCommunicator import ChatGPTCommunicator
 from SeremCoinWalletManager import SeremCoinWalletManager
-from BotPersonalities import PersonalityName, personalities
 
 # ----------------------------------------------------------#
 """
@@ -105,8 +105,12 @@ async def poop_summary(ctx):
 
 @bot.command()
 async def ask(ctx, *, prompt: str):
-    prompt += personalities.get(PersonalityName.MOLOTOV_MICKEY).value
-    response = chat_gpt.send_single_prompt(prompt)
+    messages = [
+        {"role": "system", "content": personalities.get(PersonalityName.CRINGEY_DISCORD_MOD).value + bot.emojis.__str__()},
+        # TODO add chat history?
+        {"role": "user", "content": prompt}
+    ]
+    response = chat_gpt.send_chat_prompt(messages)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
 

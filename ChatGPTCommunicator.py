@@ -6,10 +6,6 @@ from typing import List, Dict
 
 class ChatGPTCommunicator:
     _API_KEY = os.environ.get("CHATGPT_TOKEN")
-    MESSAGE_APPEND = {"role": "user", "content":
-                "Above I sent you some code. Each code is in a separate message. "
-                "Can you explain what this code does and how it functions together?"
-                "In the end, please also explain the entire project."}
 
     def __init__(self, api_key: str = _API_KEY):
         self.api_key = api_key
@@ -33,7 +29,6 @@ class ChatGPTCommunicator:
 
     def send_chat_prompt(self, messages: List[Dict[str, str]]):
         openai.api_key = self.api_key
-        messages.append(self.MESSAGE_APPEND)
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
