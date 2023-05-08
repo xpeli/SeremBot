@@ -112,7 +112,6 @@ async def ask(ctx, *, prompt: str):
 
 @bot.command()
 async def generate_image(ctx, *, prompt: str):
-    prompt += ". Make it depressed"
     image_savefile = f"{ctx.author.id}_image.png"
     chat_gpt.generate_image(prompt, image_savefile, "1024x1024")
 
