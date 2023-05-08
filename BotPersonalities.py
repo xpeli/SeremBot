@@ -8,6 +8,7 @@ class PersonalityName(Enum):
     LITERALLY_GOD = "God"
     ROBERT_FICO = "Robert Fico"
     KAPITAN_DANKO = "Kapitan Danko"
+    HELPFUL_ASSISTANT = "Helpful Assistant" # for debugging mostly
 
 class _PersonalityDescription(Enum):
     MOLOTOV_MICKEY = "Answer as a gang member from the hood. " \
@@ -39,6 +40,8 @@ class _PersonalityDescription(Enum):
                     "Use as many of his quotes as you can. " \
                     "Answer exclusively in slovak language"
 
+    HELPFUL_ASSISTANT = "You are a helpful assistant."
+
 personalities = {
     PersonalityName.MOLOTOV_MICKEY: _PersonalityDescription.MOLOTOV_MICKEY,
     PersonalityName.SNARKY_SASHA: _PersonalityDescription.SNARKY_SASHA,
@@ -46,5 +49,6 @@ personalities = {
     PersonalityName.CRINGEY_DISCORD_MOD: _PersonalityDescription.CRINGEY_DISCORD_MOD,
     PersonalityName.LITERALLY_GOD: _PersonalityDescription.LITERALLY_GOD,
     PersonalityName.ROBERT_FICO: _PersonalityDescription.ROBERT_FICO,
-    PersonalityName.KAPITAN_DANKO: _PersonalityDescription.KAPITAN_DANKO
+    PersonalityName.KAPITAN_DANKO: _PersonalityDescription.KAPITAN_DANKO,
+    PersonalityName.HELPFUL_ASSISTANT: _PersonalityDescription.HELPFUL_ASSISTANT
 }

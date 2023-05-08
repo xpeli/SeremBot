@@ -1,5 +1,7 @@
 import os
 import random
+from typing import List
+
 import discord
 from discord.ext import commands, tasks
 import datetime
@@ -106,10 +108,22 @@ async def poop_summary(ctx):
 @bot.command()
 async def ask(ctx, *, prompt: str):
     messages = [
-        {"role": "system", "content": personalities.get(PersonalityName.CRINGEY_DISCORD_MOD).value + bot.emojis.__str__()},
-        # TODO add chat history?
-        {"role": "user", "content": prompt}
+        {"role": "system", "content": personalities.get(PersonalityName.MOLOTOV_MICKEY).value}
     ]
+    async for message in ctx.channel.history(limit=20):
+        role = "user"
+        if message.author.name == "SeremBot":
+            role = "assistant"
+
+        messages.append(
+            {
+                "role": role,
+                "content": message.content
+            }
+        )
+
+    messages.append({"role": "user", "content": prompt})
+
     response = chat_gpt.send_chat_prompt(messages)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
@@ -138,5 +152,17 @@ async def on_ready():
     print(f"We have logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="github.com/xpeli/SeremBot"))
     check_pooping_users.start()
+
+
+def _available_emojis_chatgpt_message() -> str:
+    return "Emojis available to you: " + _available_emojis().__str__()
+
+def _available_emojis() -> List[str]:
+    emojis = []
+    for emoji in bot.emojis:
+        emojis.append(emoji.__str__())
+
+    return emojis
+
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
