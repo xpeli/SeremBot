@@ -109,6 +109,23 @@ async def ask(ctx, *, prompt: str):
     response = chat_gpt.send_single_prompt(prompt)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
+@bot.command()
+async def cicina(ctx):
+    length = random.randint(0, 30)
+    if(length <= 5):
+        await ctx.send(f"{ctx.author.mention}, horšie to už byť nemôže: {length}cm. Nechcel by som nehehehe")
+    elif(5 < length <= 10):
+        await ctx.send(f"{ctx.author.mention}, máš fess malú cicinu: {length}cm. S týmto veľa nezrobiš xdddd")
+    elif(10 < length <= 15):
+        await ctx.send(f"{ctx.author.mention}, Zavárané uharky sú väčšie: {length}cm. Snaha bola, ale nevyšlo to")
+    elif(15 < length <= 20):
+        await ctx.send(f"{ctx.author.mention}, Je to pohodička: {length}cm. Mr Pohodička")
+    elif(20 < length <= 25):
+        await ctx.send(f"{ctx.author.mention}, To jak paprikáš saláma: {length}cm. Saláma je dobrá")
+    elif(25 < length <= 30):
+        await ctx.send(f"{ctx.author.mention}, To je jak sústruh: {length}cm. Drátenka would be proud")
+    
+
 
 @bot.command()
 async def generate_image(ctx, *, prompt: str):
