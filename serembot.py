@@ -134,7 +134,7 @@ async def generate_image(ctx, *, prompt: str):
     chat_gpt.generate_image(prompt, image_savefile, "1024x1024")
 
     with open(image_savefile, "rb") as img_file:
-        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt[:-19]}':", file=discord.File(img_file))
+        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt}':", file=discord.File(img_file))
 
 
 @bot.command()
