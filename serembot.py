@@ -1,12 +1,14 @@
 import os
 import random
+from typing import List
+
 import discord
 from discord.ext import commands, tasks
 import datetime
 
+from BotPersonalities import PersonalityName, personalities
 from ChatGPTCommunicator import ChatGPTCommunicator
 from SeremCoinWalletManager import SeremCoinWalletManager
-from BotPersonalities import PersonalityName, personalities
 
 # ----------------------------------------------------------#
 """
@@ -105,8 +107,24 @@ async def poop_summary(ctx):
 
 @bot.command()
 async def ask(ctx, *, prompt: str):
-    prompt += personalities.get(random.choice(list(PersonalityName))).value
-    response = chat_gpt.send_single_prompt(prompt)
+    messages = [
+        {"role": "system", "content": personalities.get(PersonalityName.MOLOTOV_MICKEY).value}
+    ]
+    async for message in ctx.channel.history(limit=20):
+        role = "user"
+        if message.author.name == "SeremBot":
+            role = "assistant"
+
+        messages.append(
+            {
+                "role": role,
+                "content": message.content
+            }
+        )
+
+    messages.append({"role": "user", "content": prompt})
+
+    response = chat_gpt.send_chat_prompt(messages)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
 @bot.command()
@@ -129,12 +147,11 @@ async def cicina(ctx):
 
 @bot.command()
 async def generate_image(ctx, *, prompt: str):
-    prompt += ". Make it depressed"
     image_savefile = f"{ctx.author.id}_image.png"
     chat_gpt.generate_image(prompt, image_savefile, "1024x1024")
 
     with open(image_savefile, "rb") as img_file:
-        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt[:-19]}':", file=discord.File(img_file))
+        await ctx.send(f"{ctx.author.mention}: Here's the generated image for '{prompt}':", file=discord.File(img_file))
 
 
 @bot.command()
@@ -152,5 +169,17 @@ async def on_ready():
     print(f"We have logged in as {bot.user}")
     await bot.change_presence(activity=discord.Game(name="github.com/xpeli/SeremBot"))
     check_pooping_users.start()
+
+
+def _available_emojis_chatgpt_message() -> str:
+    return "Emojis available to you: " + _available_emojis().__str__()
+
+def _available_emojis() -> List[str]:
+    emojis = []
+    for emoji in bot.emojis:
+        emojis.append(emoji.__str__())
+
+    return emojis
+
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
