@@ -20,7 +20,7 @@ chat_gpt = ChatGPTCommunicator()
 @bot.command()
 async def ask(ctx, *, prompt: str):
     instructions = personalities.get(PersonalityName.MOLOTOV_MICKEY).value
-    response = chat_gpt.send_single_prompt(prompt, instructions)
+    response = chat_gpt.send_chat_completion(prompt, instructions)
     await ctx.send(f"{ctx.author.mention}: {response}")
 
 
