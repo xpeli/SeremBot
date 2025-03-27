@@ -45,6 +45,7 @@ class ChatGPTCommunicator:
                 model="gpt-4o-mini",
                 previous_response_id=self.response.id,
                 input=[{"role": "user", "content": prompt}],
+                instructions=instructions,
             )
 
         return self.response.output_text
