@@ -12,6 +12,7 @@ class ChatGPTCommunicator:
 
     def __init__(self, api_key: str = _API_KEY):
         self.client = OpenAI(api_key=api_key)
+        self.response = None
 
     def send_single_prompt(
             self,
@@ -25,6 +26,26 @@ class ChatGPTCommunicator:
         )
 
         return response.output_text
+
+    def send_chat_completion(
+            self,
+            prompt: str,
+            instructions: str,
+    ):
+
+        if self.response is None:
+            # Create new response prompt
+            self.response = self.client.responses.create(
+                model="gpt-4o-mini",
+                input=prompt,
+                instructions=instructions,
+            )
+        else:
+            self.response = self.client.responses.create(
+                model="gpt-4o-mini",
+                previous_response_id=self.response.id,
+                input=[{"role": "user", "content": prompt}],
+            )
 
     def generate_image(
             self,
