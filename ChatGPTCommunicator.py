@@ -47,6 +47,8 @@ class ChatGPTCommunicator:
                 input=[{"role": "user", "content": prompt}],
             )
 
+        return self.response.output_text
+
     def generate_image(
             self,
             prompt: str,
