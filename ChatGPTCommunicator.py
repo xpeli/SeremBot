@@ -2,52 +2,47 @@ import os
 
 import openai
 import requests
-from typing import List, Dict
+from typing import List, Dict, Literal
+
+from openai import OpenAI
+
 
 class ChatGPTCommunicator:
     _API_KEY = os.environ.get("CHATGPT_TOKEN")
 
     def __init__(self, api_key: str = _API_KEY):
-        self.api_key = api_key
+        self.client = OpenAI(api_key=api_key)
 
-    def send_single_prompt(self, prompt: str) -> str:
-        openai.api_key = self.api_key
-
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=f"{prompt}\nAI:",
-            max_tokens=350,
-            temperature=0.8,
-            top_p=1,
-            n=1,
-            stop=None,
-            echo=False
+    def send_single_prompt(
+            self,
+            prompt: str,
+            instructions: str,
+    ) -> str:
+        response = self.client.responses.create(
+            model="gpt-4o",
+            instructions=instructions,
+            input=prompt,
         )
 
-        response_text = response.choices[0].text.strip()
-        return response_text
+        return response.output_text
 
-    def send_chat_prompt(self, messages: List[Dict[str, str]]):
-        openai.api_key = self.api_key
-
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.8,
-            top_p=1,
+    def generate_image(
+            self,
+            prompt: str,
+            image_savefile: str,
+            size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1792x1024",
+            quality: Literal["standard", "hd"] = "hd"
+    ):
+        image = self.client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size=size,
+            quality=quality,
             n=1,
-            stop=None
         )
-
-        return response.get("choices")[0].get("message").get("content")
-
-    def generate_image(self, prompt: str, image_savefile: str, size: str = "256x256"):
-        openai.api_key = self.api_key
-
-        image = openai.Image.create(prompt=prompt, n=1, size=size)
 
         # Download image from URL
-        image_url = image['data'][0]['url']
+        image_url = image.data[0].url
         response = requests.get(image_url)
         with open(image_savefile, 'wb') as f:
             f.write(response.content)
