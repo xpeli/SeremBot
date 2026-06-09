@@ -14,12 +14,20 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent / ".env")
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from BotPersonalities import PersonalityName, personalities
 from ChatGPTCommunicator import ChatGPTCommunicator
+
+# ── Ensure data directory exists ───────────────────────────────────────────────
+Path.home().joinpath(".serembot").mkdir(exist_ok=True)
+Path.home().joinpath(".serembot", "images").mkdir(exist_ok=True)
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -31,9 +39,6 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger("serembot")
-
-# Ensure data directory exists
-Path.home().joinpath(".serembot").mkdir(exist_ok=True)
 
 # ── Token validation ─────────────────────────────────────────────────────────
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
@@ -59,7 +64,7 @@ _current_personality: PersonalityName = PersonalityName.MOLOTOV_MICKEY
 
 
 def _get_instructions() -> str:
-    return personalities[_current_personality].value
+    return personalities[_current_personality]
 
 
 # ── Events ───────────────────────────────────────────────────────────────────
@@ -87,7 +92,9 @@ async def ask(interaction: discord.Interaction, prompt: str):
 
     instructions = _get_instructions()
     response = chat_gpt.send_chat_completion(prompt, instructions)
-    await interaction.followup.send(f"{interaction.user.mention}: {response}")
+    # Public conversation: show the question + answer so everyone can follow
+    name = interaction.user.display_name
+    await interaction.followup.send(f"**{name}:** {prompt}\n\n{response}")
 
 
 @bot.tree.command(name="image", description="Generate an image with DALL-E 3")
