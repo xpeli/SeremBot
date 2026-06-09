@@ -90,11 +90,17 @@ async def ask(interaction: discord.Interaction, prompt: str):
     await interaction.response.defer()
     log.info("/ask from %s: %s", interaction.user, prompt[:80])
 
-    instructions = _get_instructions()
-    response = chat_gpt.send_chat_completion(prompt, instructions)
-    # Public conversation: show the question + answer so everyone can follow
-    name = interaction.user.display_name
-    await interaction.followup.send(f"**{name}:** {prompt}\n\n{response}")
+    try:
+        instructions = _get_instructions()
+        response = chat_gpt.send_chat_completion(prompt, instructions)
+        # Public conversation: show the question + answer so everyone can follow
+        name = interaction.user.display_name
+        await interaction.followup.send(f"**{name}:** {prompt}\n\n{response}")
+    except Exception as e:
+        log.exception("/ask failed")
+        await interaction.followup.send(
+            f"❌ Something broke: {e}. Try again."
+        )
 
 
 @bot.tree.command(name="image", description="Generate an image with DALL-E 3")
@@ -115,6 +121,11 @@ async def image(interaction: discord.Interaction, prompt: str):
     except RuntimeError as e:
         await interaction.followup.send(
             f"{interaction.user.mention}: ❌ {e}"
+        )
+    except Exception as e:
+        log.exception("/image failed")
+        await interaction.followup.send(
+            f"❌ Image generation failed: {e}"
         )
 
 
