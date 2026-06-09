@@ -1,65 +1,180 @@
+"""OpenAI API communicator — responses, image generation, conversation management."""
+
+import logging
 import os
+import time
+from pathlib import Path
 from typing import Literal
 
 import requests
-from openai import OpenAI
+from openai import APIError, APITimeoutError, OpenAI, RateLimitError
+
+log = logging.getLogger("serembot.communicator")
+
+# ── Conversation limits ──────────────────────────────────────────────────────
+MAX_CONVERSATION_TURNS = 20  # auto-reset after this many exchanges
+# OpenAI responses API doesn't expose token count directly, so we track turns
+# as a reasonable proxy.  20 turns ≈ roughly 8K–16K tokens depending on length.
+
+IMAGE_DIR = Path.home() / ".serembot" / "images"
+MAX_IMAGE_DIR_MB = 100  # clean up oldest images if folder exceeds this
 
 
 class ChatGPTCommunicator:
-    _API_KEY = os.environ.get("CHATGPT_TOKEN")
+    """Talks to OpenAI's Responses API with conversation memory and auto-reset."""
 
-    def __init__(self, api_key: str = _API_KEY):
-        self.client = OpenAI(api_key=api_key)
-        self.response = None
+    def __init__(self, api_key: str | None = None):
+        self._api_key = api_key or os.environ.get("CHATGPT_TOKEN")
+        if not self._api_key:
+            raise ValueError(
+                "CHATGPT_TOKEN not found. Set it in your environment "
+                "or pass api_key= to ChatGPTCommunicator()."
+            )
+        self.client = OpenAI(api_key=self._api_key, timeout=120.0)
+        self._response = None  # current conversation state
+        self._turn_count = 0
 
-    def send_single_prompt(
-            self,
-            prompt: str,
-            instructions: str,
-    ) -> str:
-        response = self.client.responses.create(
-            model="gpt-4o",
-            instructions=instructions,
-            input=prompt,
-        )
-        return response.output_text
+    # ── Chat ─────────────────────────────────────────────────────────────────
 
     def send_chat_completion(
-            self,
-            prompt: str,
-            instructions: str,
-    ):
-        if self.response is None:
-            self.response = self.client.responses.create(
-                model="gpt-4o-mini",
-                input=prompt,
-                instructions=instructions,
+        self, prompt: str, instructions: str, _retry: bool = True
+    ) -> str:
+        """Send a prompt in a persistent conversation. Auto-resets after
+        MAX_CONVERSATION_TURNS exchanges to avoid context overflow."""
+        if self._turn_count >= MAX_CONVERSATION_TURNS:
+            log.info("Conversation turn limit reached — auto-resetting")
+            self.reset_conversation()
+
+        try:
+            if self._response is None:
+                self._response = self.client.responses.create(
+                    model="gpt-4o-mini",
+                    input=prompt,
+                    instructions=instructions,
+                )
+            else:
+                self._response = self.client.responses.create(
+                    model="gpt-4o-mini",
+                    previous_response_id=self._response.id,
+                    input=[{"role": "user", "content": prompt}],
+                    instructions=instructions,
+                )
+
+            self._turn_count += 1
+            log.debug(
+                "Turn %d/%d — %d chars response",
+                self._turn_count, MAX_CONVERSATION_TURNS,
+                len(self._response.output_text),
             )
-        else:
-            self.response = self.client.responses.create(
-                model="gpt-4o-mini",
-                previous_response_id=self.response.id,
-                input=[{"role": "user", "content": prompt}],
-                instructions=instructions,
-            )
-        return self.response.output_text
+            return self._response.output_text
+
+        except RateLimitError:
+            if not _retry:
+                return "⏳ Rate limited by OpenAI. Try again in a minute."
+            log.warning("OpenAI rate limit hit — waiting 10s then retrying once")
+            time.sleep(10)
+            return self.send_chat_completion(prompt, instructions, _retry=False)
+
+        except APITimeoutError:
+            log.error("OpenAI API timeout")
+            return "⌛ OpenAI is taking too long. Try again."
+
+        except APIError as e:
+            log.error("OpenAI API error: %s", e)
+            return f"⚠️ API error — {e.status_code if hasattr(e, 'status_code') else 'unknown'}."
+
+        except Exception as e:
+            log.exception("Unexpected error in chat completion")
+            return "💥 Something went wrong. Try again later."
+
+    def reset_conversation(self):
+        """Start a fresh conversation. Called automatically when turn limit hit."""
+        self._response = None
+        self._turn_count = 0
+        log.info("Conversation reset")
+
+    # ── Image generation ─────────────────────────────────────────────────────
 
     def generate_image(
-            self,
-            prompt: str,
-            image_savefile: str,
-            size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1792x1024",
-            quality: Literal["standard", "hd"] = "hd",
-    ):
-        image = self.client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size=size,
-            quality=quality,
-            n=1,
-        )
+        self,
+        prompt: str,
+        image_savefile: str,
+        size: Literal[
+            "256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"
+        ] = "1792x1024",
+        quality: Literal["standard", "hd"] = "hd",
+    ) -> str:
+        """Generate an image via DALL-E 3.  Returns the path to the saved file.
 
-        image_url = image.data[0].url
-        response = requests.get(image_url)
+        Raises RuntimeError on failure so the caller can handle it gracefully.
+        """
+        log.info("Generating image: %s (%s, %s)", prompt[:60], size, quality)
+
+        try:
+            result = self.client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size=size,
+                quality=quality,
+                n=1,
+            )
+        except APITimeoutError:
+            raise RuntimeError("Image generation timed out.") from None
+        except RateLimitError:
+            raise RuntimeError("Rate limited — wait a minute.") from None
+        except APIError as e:
+            raise RuntimeError(
+                f"OpenAI API error (status {getattr(e, 'status_code', '?')})."
+            ) from e
+
+        image_url = result.data[0].url
+        if not image_url:
+            raise RuntimeError("OpenAI returned no image URL.")
+
+        # Download the image
+        try:
+            resp = requests.get(image_url, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise RuntimeError(f"Failed to download image: {e}") from e
+
+        os.makedirs(os.path.dirname(image_savefile) or ".", exist_ok=True)
         with open(image_savefile, "wb") as f:
-            f.write(response.content)
+            f.write(resp.content)
+
+        log.info("Image saved to %s (%d bytes)", image_savefile, len(resp.content))
+        self._cleanup_image_dir()
+        return image_savefile
+
+    # ── Helpers ──────────────────────────────────────────────────────────────
+
+    @property
+    def turn_count(self) -> int:
+        return self._turn_count
+
+    @staticmethod
+    def _cleanup_image_dir():
+        """Remove oldest images if the image directory exceeds MAX_IMAGE_DIR_MB."""
+        if not IMAGE_DIR.exists():
+            return
+
+        total_size = sum(
+            f.stat().st_size for f in IMAGE_DIR.iterdir() if f.is_file()
+        )
+        if total_size < MAX_IMAGE_DIR_MB * 1024 * 1024:
+            return
+
+        log.info(
+            "Image dir is %.1f MB (limit %d MB) — cleaning oldest",
+            total_size / (1024 * 1024), MAX_IMAGE_DIR_MB,
+        )
+        files = sorted(
+            IMAGE_DIR.iterdir(), key=lambda f: f.stat().st_mtime
+        )
+        for f in files:
+            if not f.is_file():
+                continue
+            f.unlink()
+            total_size -= f.stat().st_size if f.exists() else 0
+            if total_size < MAX_IMAGE_DIR_MB * 1024 * 1024 * 0.7:
+                break

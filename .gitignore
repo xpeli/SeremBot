@@ -1,2 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
 *.png
-seremcoin_wallets.txt
+.DS_Store
+*.log
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
