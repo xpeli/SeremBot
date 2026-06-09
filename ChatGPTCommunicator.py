@@ -1,9 +1,7 @@
 import os
+from typing import Literal
 
-import openai
 import requests
-from typing import List, Dict, Literal
-
 from openai import OpenAI
 
 
@@ -24,7 +22,6 @@ class ChatGPTCommunicator:
             instructions=instructions,
             input=prompt,
         )
-
         return response.output_text
 
     def send_chat_completion(
@@ -32,9 +29,7 @@ class ChatGPTCommunicator:
             prompt: str,
             instructions: str,
     ):
-
         if self.response is None:
-            # Create new response prompt
             self.response = self.client.responses.create(
                 model="gpt-4o-mini",
                 input=prompt,
@@ -47,7 +42,6 @@ class ChatGPTCommunicator:
                 input=[{"role": "user", "content": prompt}],
                 instructions=instructions,
             )
-
         return self.response.output_text
 
     def generate_image(
@@ -55,7 +49,7 @@ class ChatGPTCommunicator:
             prompt: str,
             image_savefile: str,
             size: Literal["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"] = "1792x1024",
-            quality: Literal["standard", "hd"] = "hd"
+            quality: Literal["standard", "hd"] = "hd",
     ):
         image = self.client.images.generate(
             model="dall-e-3",
@@ -65,22 +59,7 @@ class ChatGPTCommunicator:
             n=1,
         )
 
-        # Download image from URL
         image_url = image.data[0].url
         response = requests.get(image_url)
-        with open(image_savefile, 'wb') as f:
+        with open(image_savefile, "wb") as f:
             f.write(response.content)
-
-if __name__ == "__main__":
-    c = ChatGPTCommunicator()
-    openai.api_key = os.environ.get("CHATGPT_TOKEN")
-
-    m: List[Dict[str, str]] = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Who won the world series in 2020?"},
-        {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
-        {"role": "user", "content": "First secret codeword is Blue"},
-        {"role": "user", "content": "Second secret codeword is Red"},
-        {"role": "user", "content": "This secret codeword is Purple"},
-        {"role": "user", "content": "Can you tell me the secret codewords?"},
-    ]
