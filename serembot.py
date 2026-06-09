@@ -180,7 +180,7 @@ async def status(interaction: discord.Interaction):
         f"🎭 **Personality:** {_current_personality.value}\n"
         f"💬 **Conversation turns:** {chat_gpt.turn_count} "
         f"(auto-reset at 20)\n"
-        f"🖼️ **Model:** gpt-4o-mini / DALL-E 3"
+        f"🖼️ **Model:** gpt-4o-mini / gpt-image-1"
     )
 
 

@@ -100,22 +100,20 @@ class ChatGPTCommunicator:
         prompt: str,
         image_savefile: str,
         size: Literal[
-            "256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"
-        ] = "1792x1024",
-        quality: Literal["standard", "hd"] = "hd",
+            "256x256", "512x512", "1024x1024"
+        ] = "1024x1024",
     ) -> str:
-        """Generate an image via DALL-E 3.  Returns the path to the saved file.
+        """Generate an image via GPT Image API.  Returns the path to the saved file.
 
         Raises RuntimeError on failure so the caller can handle it gracefully.
         """
-        log.info("Generating image: %s (%s, %s)", prompt[:60], size, quality)
+        log.info("Generating image: %s (%s)", prompt[:60], size)
 
         try:
             result = self.client.images.generate(
-                model="dall-e-3",
+                model="gpt-image-1",
                 prompt=prompt,
                 size=size,
-                quality=quality,
                 n=1,
             )
         except APITimeoutError:
@@ -127,22 +125,29 @@ class ChatGPTCommunicator:
                 f"OpenAI API error (status {getattr(e, 'status_code', '?')})."
             ) from e
 
-        image_url = result.data[0].url
-        if not image_url:
-            raise RuntimeError("OpenAI returned no image URL.")
+        image_data = result.data[0]
+        image_url = image_data.url
+        image_b64 = image_data.b64_json
 
-        # Download the image
-        try:
-            resp = requests.get(image_url, timeout=30)
-            resp.raise_for_status()
-        except requests.RequestException as e:
-            raise RuntimeError(f"Failed to download image: {e}") from e
-
-        os.makedirs(os.path.dirname(image_savefile) or ".", exist_ok=True)
-        with open(image_savefile, "wb") as f:
-            f.write(resp.content)
-
-        log.info("Image saved to %s (%d bytes)", image_savefile, len(resp.content))
+        # gpt-image-1 returns base64, DALL-E returns URL
+        if image_b64:
+            import base64
+            os.makedirs(os.path.dirname(image_savefile) or ".", exist_ok=True)
+            with open(image_savefile, "wb") as f:
+                f.write(base64.b64decode(image_b64))
+            log.info("Image saved to %s (%d bytes)", image_savefile, len(base64.b64decode(image_b64)))
+        elif image_url:
+            try:
+                resp = requests.get(image_url, timeout=30)
+                resp.raise_for_status()
+            except requests.RequestException as e:
+                raise RuntimeError(f"Failed to download image: {e}") from e
+            os.makedirs(os.path.dirname(image_savefile) or ".", exist_ok=True)
+            with open(image_savefile, "wb") as f:
+                f.write(resp.content)
+            log.info("Image saved to %s (%d bytes)", image_savefile, len(resp.content))
+        else:
+            raise RuntimeError("OpenAI returned neither image URL nor data.")
         self._cleanup_image_dir()
         return image_savefile
 
