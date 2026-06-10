@@ -179,7 +179,8 @@ class ChatGPTCommunicator:
         for f in files:
             if not f.is_file():
                 continue
+            sz = f.stat().st_size
             f.unlink()
-            total_size -= f.stat().st_size if f.exists() else 0
+            total_size -= sz
             if total_size < MAX_IMAGE_DIR_MB * 1024 * 1024 * 0.7:
                 break

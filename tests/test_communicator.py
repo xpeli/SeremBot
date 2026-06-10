@@ -130,7 +130,11 @@ class TestImageGeneration:
                       return_value=MagicMock(content=b"fakeimage", status_code=200,
                                             raise_for_status=MagicMock()))
         path = str(tmp_path / "img.png")
-        result = communicator.generate_image("a cat", path, size="256x256")
+        # gpt-image-1 returns b64_json, not URL
+        mock_openai.images.generate.return_value = MagicMock(
+            data=[MagicMock(b64_json="ZmFrZWltYWdl", url=None)]
+        )
+        result = communicator.generate_image("a cat", path)
         assert result == path
         mock_openai.images.generate.assert_called_once()
 
@@ -144,11 +148,11 @@ class TestImageGeneration:
         with pytest.raises(RuntimeError, match="Rate limited"):
             communicator.generate_image("test", "/tmp/nope.png")
 
-    def test_no_url_raises(self, communicator, mock_openai):
+    def test_no_image_data_raises(self, communicator, mock_openai):
         mock_openai.images.generate.return_value = MagicMock(
-            data=[MagicMock(url=None)]
+            data=[MagicMock(b64_json=None, url=None)]
         )
-        with pytest.raises(RuntimeError, match="no image URL"):
+        with pytest.raises(RuntimeError, match="neither image"):
             communicator.generate_image("test", "/tmp/nope.png")
 
 
