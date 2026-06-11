@@ -29,6 +29,26 @@ from ChatGPTCommunicator import ChatGPTCommunicator
 Path.home().joinpath(".serembot").mkdir(exist_ok=True)
 Path.home().joinpath(".serembot", "images").mkdir(exist_ok=True)
 
+_PERSONALITY_FILE = Path.home() / ".serembot" / "personality"
+
+
+def _load_personality() -> PersonalityName:
+    """Load persisted personality, falling back to default."""
+    if _PERSONALITY_FILE.exists():
+        try:
+            saved = _PERSONALITY_FILE.read_text().strip()
+            for name in PersonalityName:
+                if name.value == saved:
+                    return name
+        except Exception:
+            pass
+    return PersonalityName.MOLOTOV_MICKEY
+
+
+def _save_personality(personality: PersonalityName) -> None:
+    """Persist personality to disk."""
+    _PERSONALITY_FILE.write_text(personality.value)
+
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -60,7 +80,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 chat_gpt = ChatGPTCommunicator()
 
 # Current personality (global — shared by all users in the server)
-_current_personality: PersonalityName = PersonalityName.MOLOTOV_MICKEY
+_current_personality: PersonalityName = _load_personality()
 
 
 def _get_instructions() -> str:
@@ -152,6 +172,7 @@ async def personality(interaction: discord.Interaction, name: str):
         return
 
     _current_personality = new_personality
+    _save_personality(new_personality)
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.listening,
