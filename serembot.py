@@ -47,7 +47,10 @@ def _load_personality() -> PersonalityName:
 
 def _save_personality(personality: PersonalityName) -> None:
     """Persist personality to disk."""
-    _PERSONALITY_FILE.write_text(personality.value)
+    try:
+        _PERSONALITY_FILE.write_text(personality.value)
+    except OSError as e:
+        log.warning("Failed to persist personality to %s: %s", _PERSONALITY_FILE, e)
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
