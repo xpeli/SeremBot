@@ -125,6 +125,8 @@ class ChatGPTCommunicator:
                 f"OpenAI API error (status {getattr(e, 'status_code', '?')})."
             ) from e
 
+        if not result.data:
+            raise RuntimeError("OpenAI returned no image data.") from None
         image_data = result.data[0]
         image_url = image_data.url
         image_b64 = image_data.b64_json
