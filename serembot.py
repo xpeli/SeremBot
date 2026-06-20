@@ -200,11 +200,13 @@ async def reset(interaction: discord.Interaction):
 
 @bot.tree.command(name="status", description="Show bot status")
 async def status(interaction: discord.Interaction):
+    model = getattr(chat_gpt, '_chat_model', 'gpt-4o-mini')
+    img_model = getattr(chat_gpt, '_image_model', 'gpt-image-1')
     await interaction.response.send_message(
         f"🎭 **Personality:** {_current_personality.value}\n"
         f"💬 **Conversation turns:** {chat_gpt.turn_count} "
         f"(auto-reset at 20)\n"
-        f"🖼️ **Model:** gpt-4o-mini / gpt-image-1"
+        f"🖼️ **Model:** {model} / {img_model}"
     )
 
 

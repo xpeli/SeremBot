@@ -23,6 +23,10 @@ MAX_IMAGE_DIR_MB = 100  # clean up oldest images if folder exceeds this
 class ChatGPTCommunicator:
     """Talks to OpenAI's Responses API with conversation memory and auto-reset."""
 
+    # Model identifiers — used by /status and internally.
+    _chat_model = "gpt-4o-mini"
+    _image_model = "gpt-image-1"
+
     def __init__(self, api_key: str | None = None):
         self._api_key = api_key or os.environ.get("CHATGPT_TOKEN")
         if not self._api_key:
@@ -48,13 +52,13 @@ class ChatGPTCommunicator:
         try:
             if self._response is None:
                 self._response = self.client.responses.create(
-                    model="gpt-4o-mini",
+                    model=self._chat_model,
                     input=prompt,
                     instructions=instructions,
                 )
             else:
                 self._response = self.client.responses.create(
-                    model="gpt-4o-mini",
+                    model=self._chat_model,
                     previous_response_id=self._response.id,
                     input=[{"role": "user", "content": prompt}],
                     instructions=instructions,
@@ -111,7 +115,7 @@ class ChatGPTCommunicator:
 
         try:
             result = self.client.images.generate(
-                model="gpt-image-1",
+                model=self._image_model,
                 prompt=prompt,
                 size=size,
                 n=1,
