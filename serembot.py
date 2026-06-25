@@ -45,13 +45,6 @@ def _load_personality() -> PersonalityName:
     return PersonalityName.MOLOTOV_MICKEY
 
 
-def _save_personality(personality: PersonalityName) -> None:
-    """Persist personality to disk."""
-    try:
-        _PERSONALITY_FILE.write_text(personality.value)
-    except OSError as e:
-        log.warning("Failed to persist personality to %s: %s", _PERSONALITY_FILE, e)
-
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -62,6 +55,13 @@ logging.basicConfig(
     ],
 )
 log = logging.getLogger("serembot")
+
+def _save_personality(personality: PersonalityName) -> None:
+    """Persist personality to disk."""
+    try:
+        _PERSONALITY_FILE.write_text(personality.value)
+    except OSError as e:
+        log.warning("Failed to persist personality to %s: %s", _PERSONALITY_FILE, e)
 
 # ── Token validation ─────────────────────────────────────────────────────────
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
