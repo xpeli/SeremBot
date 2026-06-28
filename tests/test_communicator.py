@@ -125,18 +125,19 @@ class TestConversationReset:
 
 
 class TestImageGeneration:
-    def test_success(self, communicator, mock_openai, tmp_path, mocker):
-        mocker.patch("ChatGPTCommunicator.requests.get",
-                      return_value=MagicMock(content=b"fakeimage", status_code=200,
-                                            raise_for_status=MagicMock()))
-        path = str(tmp_path / "img.png")
-        # gpt-image-1 returns b64_json, not URL
-        mock_openai.images.generate.return_value = MagicMock(
-            data=[MagicMock(b64_json="ZmFrZWltYWdl", url=None)]
-        )
-        result = communicator.generate_image("a cat", path)
-        assert result == path
-        mock_openai.images.generate.assert_called_once()
+    def test_success(self, communicator, mock_openai, tmp_path):
+        from unittest.mock import patch, MagicMock
+        with patch("ChatGPTCommunicator.requests.get",
+                    return_value=MagicMock(content=b"fakeimage", status_code=200,
+                                          raise_for_status=MagicMock())):
+            path = str(tmp_path / "img.png")
+            # gpt-image-1 returns b64_json, not URL
+            mock_openai.images.generate.return_value = MagicMock(
+                data=[MagicMock(b64_json="ZmFrZWltYWdl", url=None)]
+            )
+            result = communicator.generate_image("a cat", path)
+            assert result == path
+            mock_openai.images.generate.assert_called_once()
 
     def test_timeout_raises(self, communicator):
         communicator.client.images.generate.side_effect = _timeout()
