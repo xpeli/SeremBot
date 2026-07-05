@@ -46,12 +46,18 @@ def _load_personality() -> PersonalityName:
 
 
 # ── Logging ──────────────────────────────────────────────────────────────────
+from logging.handlers import RotatingFileHandler
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(Path.home() / ".serembot" / "serembot.log"),
+        RotatingFileHandler(
+            Path.home() / ".serembot" / "serembot.log",
+            maxBytes=5 * 1024 * 1024,  # 5 MB
+            backupCount=2,
+        ),
     ],
 )
 log = logging.getLogger("serembot")
