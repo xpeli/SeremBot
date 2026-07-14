@@ -139,9 +139,10 @@ class ChatGPTCommunicator:
         if image_b64:
             import base64
             os.makedirs(os.path.dirname(image_savefile) or ".", exist_ok=True)
+            decoded = base64.b64decode(image_b64)
             with open(image_savefile, "wb") as f:
-                f.write(base64.b64decode(image_b64))
-            log.info("Image saved to %s (%d bytes)", image_savefile, len(base64.b64decode(image_b64)))
+                f.write(decoded)
+            log.info("Image saved to %s (%d bytes)", image_savefile, len(decoded))
         elif image_url:
             try:
                 resp = requests.get(image_url, timeout=30)
