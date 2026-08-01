@@ -52,7 +52,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),
         RotatingFileHandler(
             Path.home() / ".serembot" / "serembot.log",
             maxBytes=5 * 1024 * 1024,  # 5 MB
