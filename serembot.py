@@ -226,4 +226,4 @@ async def ping(interaction: discord.Interaction):
 # ── Run ──────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    bot.run(DISCORD_TOKEN)
+    bot.run(DISCORD_TOKEN, log_handler=None)
